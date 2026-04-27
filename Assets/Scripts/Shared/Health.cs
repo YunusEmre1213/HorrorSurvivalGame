@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.SceneManagement; // BU SATIRI EKLE (Sahneleri yönetmek için)
 
 public class Health : MonoBehaviour
 {
     [Header("Can Ayarlarý")]
     public float maxHealth = 100f;
     private float currentHealth;
+    private bool isDead = false; // Karakterin bir kez ölmesini saðlamak için
 
     [Header("Görsel Efektler")]
     public GameObject damagePopupPrefab;
@@ -16,55 +18,58 @@ public class Health : MonoBehaviour
 
     public void TakeDamage(float amount, Vector3 hitPosition)
     {
-        // Ýki kere yazýlan hasar satýrýný teke düþürdük
+        if (isDead) return; // Eðer zaten ölüysek hasar alma
+
         currentHealth -= amount;
 
-        // AJAN 1: Vurulma bu scripte ulaþýyor mu?
-        Debug.Log(gameObject.name + " hasar aldý! Kalan Can: " + currentHealth);
-
-        // EÐER HASAR ALAN KÝÞÝ OYUNCU (PLAYER) ÝSE ARAYÜZÜ GÜNCELLE:
+        // UI Güncelleme (Player ise)
         if (gameObject.CompareTag("Player"))
         {
-            // AJAN 2: Tag (Etiket) doðru ayarlanmýþ mý?
-            Debug.Log("Player tag'i algýlandý, VitalsManager aranýyor...");
-
             VitalsManager vitals = FindAnyObjectByType<VitalsManager>();
-
             if (vitals != null)
             {
-                // AJAN 3: Manager bulundu, bar verisi gönderiliyor!
-                Debug.Log("VitalsManager bulundu! Bar güncelleniyor: " + currentHealth + " / " + maxHealth);
                 vitals.UpdateHealthBar(currentHealth, maxHealth);
-            }
-            else
-            {
-                Debug.LogError("DÝKKAT: VitalsManager sahnede bulunamadý!");
             }
         }
 
-        // Hasar yazýsý (Popup) çýkarma sistemi
+        // Hasar Yazýsý
         if (damagePopupPrefab != null)
         {
             GameObject popup = Instantiate(damagePopupPrefab, hitPosition, Quaternion.identity);
             popup.GetComponent<DamagePopup>().Setup(amount);
         }
 
-        if (currentHealth <= 0) Die();
+        // Öldü mü kontrolü
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
     }
 
     private void Die()
     {
+        isDead = true;
         Debug.Log(gameObject.name + " öldü.");
 
-        // Eðer ölen karakter oyuncuysa oyunu bitir, düþmansa yok et
         if (gameObject.CompareTag("Player"))
         {
-            Debug.Log("OYUN BÝTTÝ - YENÝDEN BAÞLATILIYOR...");
-            // Ýleride buraya Death Screen (Ölüm Ekraný) ekleyeceðiz.
+            // OYUNCU ÖLDÜÐÜNDE NE OLSUN?
+            // Þimdilik sahneyi 2 saniye sonra yeniden baþlatalým:
+            Invoke("RestartLevel", 2f);
+
+            // Alternatif: Karakterin hareketini burada durdurabilirsin
+            // GetComponent<PlayerController>().enabled = false;
         }
         else
         {
+            // Düþman öldüðünde onu yok et
             Destroy(gameObject);
         }
+    }
+
+    void RestartLevel()
+    {
+        // Mevcut sahneyi yeniden yükler
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }
