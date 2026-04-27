@@ -13,6 +13,8 @@ public class Weapon : MonoBehaviour
 
     void Update()
     {
+        if (PauseManager.IsGamePaused) return;
+
         // Sol týklandýysa
         if (fireAction.action.WasPressedThisFrame())
         {

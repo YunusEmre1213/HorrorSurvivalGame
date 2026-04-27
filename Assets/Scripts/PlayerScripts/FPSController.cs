@@ -42,6 +42,9 @@ public class FPSController : MonoBehaviour
 
     void Update()
     {
+
+        if (PauseManager.IsGamePaused) return;
+
         // 1. HAREKET (WASD)
         Vector2 moveInput = moveAction.action.ReadValue<Vector2>();
         Vector3 forward = transform.TransformDirection(Vector3.forward);
