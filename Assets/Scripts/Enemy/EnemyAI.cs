@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 public class EnemyAI : MonoBehaviour
 {
-    // 1. Yeni durumumuzu ekledik
     public enum EnemyState { Patrolling, Chasing, Attacking }
 
     [Header("Durum Yönetimi")]
@@ -21,25 +20,32 @@ public class EnemyAI : MonoBehaviour
     public float detectionRange = 8f;
     public float stopDistance = 1.5f;
 
-    [Header("Saldýrý Ayarlarý")]
-    public float attackRange = 2f; // Oyuncuya vurabilme mesafesi
-    public float attackDamage = 20f; // Vereceði hasar
-    public float attackCooldown = 1.5f; // Ýki vuruþ arasýndaki saniye
-    private float lastAttackTime = 0f; // Son vuruþ zamanýný hafýzada tutar
+    [Header("Saldýrý ve Hýrçýnlýk Ayarlarý")]
+    public float attackRange = 2f;
+    public float baseAttackDamage = 20f;
+    public float attackCooldown = 1.5f;
+    private float lastAttackTime = 0f;
+
+    // Dinamik hýz ayarlarý
+    public float baseSpeed = 3.5f;
+    public float maxSpeed = 6.5f;
 
     private NavMeshAgent agent;
     private Transform player;
-    private Health playerHealth; // Oyuncunun can scriptini önbelleðe alýyoruz
+    private Health playerHealth;
+    private PsychologyManager playerPsycho;
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        agent.speed = baseSpeed;
 
-        // Oyuncunun üzerindeki Health bileþenini bul ve kaydet (Optimizasyon)
-        if (player != null)
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
         {
-            playerHealth = player.GetComponent<Health>();
+            player = playerObj.transform;
+            playerHealth = playerObj.GetComponent<Health>();
+            playerPsycho = playerObj.GetComponent<PsychologyManager>();
         }
 
         if (waypoints.Count > 0)
@@ -48,16 +54,26 @@ public class EnemyAI : MonoBehaviour
 
     void Update()
     {
-
         if (player == null)
         {
             agent.isStopped = true;
-            return; 
+            return;
         }
+
+        // DÝNAMÝK ZORLUK (Hýrçýnlýk) HESAPLAMASI
+        float aggroMultiplier = 1f;
+        if (playerHealth != null && playerPsycho != null)
+        {
+            float healthPercent = playerHealth.currentHealth / playerHealth.maxHealth;
+            float psychoPercent = playerPsycho.currentPsycho / playerPsycho.maxPsycho;
+
+            aggroMultiplier = 1f + ((1f - healthPercent) * 0.5f) + ((1f - psychoPercent) * 0.5f);
+        }
+
+        agent.speed = Mathf.Clamp(baseSpeed * aggroMultiplier, baseSpeed, maxSpeed);
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // 2. Durum Makinesi Geçiþleri (Artýk Saldýrý da var)
         if (distanceToPlayer <= attackRange)
         {
             currentState = EnemyState.Attacking;
@@ -72,7 +88,6 @@ public class EnemyAI : MonoBehaviour
             GoToNextWaypoint();
         }
 
-        // 3. Mevcut duruma göre ilgili fonksiyonu çalýþtýr
         switch (currentState)
         {
             case EnemyState.Patrolling:
@@ -82,7 +97,7 @@ public class EnemyAI : MonoBehaviour
                 ChaseLogic();
                 break;
             case EnemyState.Attacking:
-                AttackLogic();
+                AttackLogic(aggroMultiplier);
                 break;
         }
     }
@@ -122,38 +137,34 @@ public class EnemyAI : MonoBehaviour
         agent.isStopped = agent.remainingDistance <= stopDistance;
     }
 
-    // 4. Yeni Saldýrý Mantýðý
-    void AttackLogic()
+    void AttackLogic(float currentAggro)
     {
-        // Saldýrýrken olduðu yerde dursun ve karakterimize dönsün
         agent.isStopped = true;
 
-        // Y ekseninde bize bakmasýný saðla (Yukarý/aþaðý eðilmemesi için)
         Vector3 lookPos = player.position - transform.position;
         lookPos.y = 0;
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookPos), Time.deltaTime * 5f);
 
-        // Bekleme süresi dolduysa VUR!
         if (Time.time >= lastAttackTime + attackCooldown)
         {
             if (playerHealth != null)
             {
-                // Hasarý oyuncuya ilet
-                playerHealth.TakeDamage(attackDamage, transform.position);
-                Debug.Log("Düþman sana vurdu! " + attackDamage + " hasar aldýn.");
+                float dynamicDamage = baseAttackDamage * currentAggro;
+
+                playerHealth.TakeDamage(dynamicDamage, transform.position);
+                Debug.Log("Düþman Hýrçýnlýðý: " + currentAggro + "x | Verilen Hasar: " + dynamicDamage);
             }
 
-            // Son vuruþ zamanýný þu anki zaman olarak güncelle
             lastAttackTime = Time.time;
         }
     }
 
+    
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
 
-        // Saldýrý menzilini kýrmýzýyla göster
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
 

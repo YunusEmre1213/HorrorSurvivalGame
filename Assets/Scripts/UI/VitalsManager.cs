@@ -10,6 +10,9 @@ public class VitalsManager : MonoBehaviour
     public TextMeshProUGUI subjectText;
     public Image healthBarFill;
     public Image sanityBarFill;
+    public Image batteryBarFill;
+    public TextMeshProUGUI batteryCountText;
+    public TextMeshProUGUI ammoText;
 
     [Header("Glitch (Bozulma) Mesajlarý")]
     public string normalName = "SUBJECT #047";
@@ -104,4 +107,36 @@ public class VitalsManager : MonoBehaviour
             healthBarFill.fillAmount = currentHp / maxHp;
         }
     }
+
+    public void UpdateBatteryBar(float currentBattery, float maxBattery)
+    {
+        if (batteryBarFill != null)
+        {
+            batteryBarFill.fillAmount = currentBattery / maxBattery;
+
+            
+            if (currentBattery / maxBattery <= 0.2f)
+                batteryBarFill.color = Color.red;
+            else
+                batteryBarFill.color = Color.yellow; 
+        }
+    }
+
+    public void UpdateInventoryUI(int batteryCount)
+    {
+        if (batteryCountText != null)
+        {
+            batteryCountText.text = batteryCount.ToString();
+        }
+    }
+
+    public void UpdateAmmoText(int currentAmmo, int reserveAmmo)
+    {
+        if (ammoText != null)
+        {
+            // Ekranda "7 / 15" formatýnda yazdýrýr
+            ammoText.text = currentAmmo + " / " + reserveAmmo;
+        }
+    }
+
 }

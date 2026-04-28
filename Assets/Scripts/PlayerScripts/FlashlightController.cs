@@ -4,47 +4,94 @@ using UnityEngine.InputSystem;
 public class FlashlightController : MonoBehaviour
 {
     [Header("Referanslar")]
-    public Light flashlight; // Fenerimizin ýþýk bileþeni
-    public InputActionReference toggleAction; // F tuþu girdisi
+    public Light flashlight;
+    public PsychologyManager psychoManager;
+    public InputActionReference toggleAction;
 
-    private bool isFlashlightOn = true; // Baþlangýçta açýk mý kapalý mý olsun?
+    [Header("Pil Ayarlarý")]
+    public float maxBattery = 100f;
+    public float currentBattery = 100f;
+    public float batteryDrainRate = 2.5f;
+
+    private bool isFlashlightOn = false;
+    private VitalsManager vitals;
+    private EquipmentManager equipmentManager; // YENÝ
 
     void Start()
     {
-        // Fener objesini bulamadýysak hata vermemesi için Null Check
-        if (flashlight != null)
+        vitals = FindAnyObjectByType<VitalsManager>();
+        equipmentManager = GetComponentInParent<EquipmentManager>(); // YENÝ
+        if (psychoManager == null) psychoManager = GetComponentInParent<PsychologyManager>();
+        if (flashlight != null) flashlight.enabled = isFlashlightOn;
+        if (psychoManager != null) psychoManager.SetFlashlightState(isFlashlightOn);
+    }
+
+    private void OnEnable()
+    {
+        if (toggleAction != null)
         {
-            flashlight.enabled = isFlashlightOn;
+            toggleAction.action.Enable();
+            toggleAction.action.performed += OnToggleInput;
         }
+    }
+
+    private void OnDisable()
+    {
+        if (toggleAction != null)
+        {
+            toggleAction.action.performed -= OnToggleInput;
+            toggleAction.action.Disable();
+        }
+    }
+
+    private void OnToggleInput(InputAction.CallbackContext context)
+    {
+        // YENÝ: Sadece fener elde ise toggle çalýþsýn
+        if (equipmentManager != null && equipmentManager.currentEquipIndex != 1)
+            return;
+
+        ToggleLight();
     }
 
     void Update()
     {
-        // Eðer F tuþuna basýldýysa
-        if (toggleAction.action.WasPressedThisFrame())
+        if (isFlashlightOn)
         {
-            ToggleLight();
+            currentBattery -= batteryDrainRate * Time.deltaTime;
+            if (vitals != null) vitals.UpdateBatteryBar(currentBattery, maxBattery);
+            if (currentBattery <= 0)
+            {
+                currentBattery = 0;
+                ForceTurnOff();
+            }
         }
     }
 
     void ToggleLight()
     {
         if (flashlight == null) return;
-
-        // Durumu tersine çevir (Açýksa kapat, kapalýysa aç)
+        if (!isFlashlightOn && currentBattery <= 0)
+        {
+            Debug.LogWarning("Pil bitti! TAB'a basarak envanterden pil kullan.");
+            return;
+        }
         isFlashlightOn = !isFlashlightOn;
         flashlight.enabled = isFlashlightOn;
-
-        // Staj Notu: Ýleride buraya fenerin "týk" açýlma sesi eklenebilir. (AudioSource.PlayOneShot)
+        if (psychoManager != null) psychoManager.SetFlashlightState(isFlashlightOn);
     }
 
-    private void OnEnable()
+    // EquipmentManager silaha geçince çaðýrýr
+    public void ForceTurnOff()
     {
-        toggleAction.action.Enable();
+        isFlashlightOn = false;
+        if (flashlight != null) flashlight.enabled = false;
+        if (psychoManager != null) psychoManager.SetFlashlightState(false);
     }
 
-    private void OnDisable()
+    public void ReloadBatteryFromUI()
     {
-        toggleAction.action.Disable();
+        currentBattery = maxBattery;
+        if (vitals != null) vitals.UpdateBatteryBar(currentBattery, maxBattery);
+        Debug.Log("Fener UI üzerinden þarj edildi!");
     }
 }

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.InputSystem; // YENÝ: Yeni Input Sistemi kütüphanesi eklendi
 
 public class PsychologyManager : MonoBehaviour
 {
@@ -9,28 +8,45 @@ public class PsychologyManager : MonoBehaviour
     public float currentPsycho = 100f;
     public float maxPsycho = 100f;
 
+    [Header("Karanlýk ve Iþýk Ayarlarý")]
+    public bool isFlashlightOn = false;
+    public float darknessDrainRate = 1.5f;
+    public float darknessPsychoLimit = 30f;
+    public float lightRecoveryRate = 2f;
+
     [Header("Referanslar")]
     public Volume globalVolume;
-    public AudioSource heartbeatAudio; // Kalp atýþý sesi
+    public AudioSource heartbeatAudio;
 
-    // Efekt Referanslarý
+    // Yeni Efekt Referanslarý eklendi
     private DepthOfField dof;
     private ChromaticAberration chromatic;
+    private Vignette vignette;
+    private LensDistortion lensDistortion;
 
     void Start()
     {
-        if (globalVolume.profile.TryGet(out DepthOfField d)) dof = d;
-        if (globalVolume.profile.TryGet(out ChromaticAberration c)) chromatic = c;
+        // URP Volume içindeki efektleri çekiyoruz
+        if (globalVolume != null)
+        {
+            if (globalVolume.profile.TryGet(out DepthOfField d)) dof = d;
+            if (globalVolume.profile.TryGet(out ChromaticAberration c)) chromatic = c;
+            if (globalVolume.profile.TryGet(out Vignette v)) vignette = v;
+            if (globalVolume.profile.TryGet(out LensDistortion ld)) lensDistortion = ld;
+        }
 
         WakeUpSequence();
     }
 
     void Update()
     {
-        // YENÝ: Yeni Input Sistemine göre klavyeden K tuþunu okuma (Test Ýçin)
-        if (Keyboard.current != null && Keyboard.current.kKey.wasPressedThisFrame)
+        if (!isFlashlightOn && currentPsycho > darknessPsychoLimit)
         {
-            DecreasePsychology(10f);
+            DecreasePsycho(darknessDrainRate * Time.deltaTime);
+        }
+        else if (isFlashlightOn && currentPsycho < maxPsycho)
+        {
+            IncreasePsycho(lightRecoveryRate * Time.deltaTime);
         }
 
         HandleEffects();
@@ -45,28 +61,69 @@ public class PsychologyManager : MonoBehaviour
         }
     }
 
-    public void DecreasePsychology(float amount)
+    public void DecreasePsycho(float amount)
     {
         currentPsycho -= amount;
         currentPsycho = Mathf.Clamp(currentPsycho, 0, maxPsycho);
     }
 
+    public void IncreasePsycho(float amount)
+    {
+        currentPsycho += amount;
+        currentPsycho = Mathf.Clamp(currentPsycho, 0, maxPsycho);
+    }
+
+    public void SetFlashlightState(bool state)
+    {
+        isFlashlightOn = state;
+    }
+
     private void HandleEffects()
     {
-        if (chromatic != null)
+        float psychoPercent = currentPsycho / maxPsycho;
+
+        if (psychoPercent <= 0.5f)
         {
-            float psychoPercent = currentPsycho / maxPsycho;
+            // Þiddet hesaplamasý (0.5'ten aþaðý indikçe 0'dan 1'e doðru artar)
+            float intensity = 1f - (psychoPercent * 2f);
 
-            if (psychoPercent <= 0.5f)
+            // 1. Renk Ayrýþmasý
+            if (chromatic != null) chromatic.intensity.value = intensity;
+
+            // 2. Tünel Vizyonu (Kenarlar kararýr, klostrofobi yaratýr)
+            if (vignette != null)
             {
-                chromatic.intensity.value = 1f - (psychoPercent * 2f);
-
-                if (!heartbeatAudio.isPlaying) heartbeatAudio.Play();
+                vignette.active = true;
+                vignette.intensity.value = intensity * 0.45f; // Çok abartmamak için 0.45 ile çarptýk
             }
-            else
+
+            // 3. SARHOÞLUK/DALGALANMA EFEKTÝ (Zamanla ileri geri sallanýr)
+            if (lensDistortion != null)
             {
-                chromatic.intensity.value = 0f;
-                if (heartbeatAudio.isPlaying) heartbeatAudio.Stop();
+                lensDistortion.active = true;
+                // Sinüs dalgasý kullanarak ekraný nefes alýyormuþ gibi çarpýtýrýz
+                lensDistortion.intensity.value = Mathf.Sin(Time.time * 3f) * (intensity * 0.3f);
+            }
+
+            // 4. KALP ATIÞI HIZLANMASI
+            if (heartbeatAudio != null)
+            {
+                if (!heartbeatAudio.isPlaying) heartbeatAudio.Play();
+                // Psikoloji düþtükçe kalp atýþ hýzý (pitch) artar!
+                heartbeatAudio.pitch = 1f + (intensity * 0.6f);
+            }
+        }
+        else
+        {
+            // Her þey normalse tüm efektleri sýfýrla
+            if (chromatic != null) chromatic.intensity.value = 0f;
+            if (vignette != null) vignette.active = false;
+            if (lensDistortion != null) lensDistortion.active = false;
+
+            if (heartbeatAudio != null && heartbeatAudio.isPlaying)
+            {
+                heartbeatAudio.Stop();
+                heartbeatAudio.pitch = 1f; // Sesi normale döndür
             }
         }
     }
