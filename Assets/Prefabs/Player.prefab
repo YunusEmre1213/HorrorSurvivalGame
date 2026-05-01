@@ -566,6 +566,7 @@ GameObject:
   - component: {fileID: 2044580789514160560}
   - component: {fileID: 4928193001382506263}
   - component: {fileID: 19401036895990166}
+  - component: {fileID: 3627759377949570569}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -919,6 +920,18 @@ MonoBehaviour:
   flashlightLight: {fileID: 8013005854349824845}
   currentEquipIndex: 1
   flashlightController: {fileID: 4247496533818342488}
+--- !u!114 &3627759377949570569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7978838000393941087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 854c6366143f99b4db1295259c0d077b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerKeyring
 --- !u!1001 &8093659513783522911
 PrefabInstance:
   m_ObjectHideFlags: 0
