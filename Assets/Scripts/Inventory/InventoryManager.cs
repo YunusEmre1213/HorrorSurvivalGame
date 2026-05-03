@@ -17,6 +17,13 @@ public class InventoryManager : MonoBehaviour
     [Header("Referanslar")]
     public FlashlightController flashlight;
 
+    [Header("Not Defteri")]
+    public List<string> toplananNotlar = new List<string>();
+
+    [Header("Not Okuma Arayüzü")]
+    public TextMeshProUGUI envanterNotYazisi; 
+    private int guncelNotIndeksi = 0; 
+
     private bool isInventoryOpen = false;
 
     void Start()
@@ -47,6 +54,7 @@ public class InventoryManager : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            GuncelNotuGoster();
         }
         else
         {
@@ -66,15 +74,13 @@ public class InventoryManager : MonoBehaviour
         UpdateUI();
     }
 
-    // --- ÝÞTE EKSÝK OLAN VE SÝLAHA HATA VERDÝREN FONKSÝYONLAR ---
-
-    // Silahtaki mermiyi kontrol etmek için "Kaç tane var?" diye soran fonksiyon
+    
     public int GetItemCount(ItemType type)
     {
         return inventory.ContainsKey(type) ? inventory[type] : 0;
     }
 
-    // Þarjör doldururken envanterden mermi silen fonksiyon
+   
     public bool UseItem(ItemType type)
     {
         if (inventory.ContainsKey(type) && inventory[type] > 0)
@@ -86,7 +92,7 @@ public class InventoryManager : MonoBehaviour
         return false;
     }
 
-    // -------------------------------------------------------------
+   
 
     public void OnUseBatteryButtonClicked()
     {
@@ -117,4 +123,57 @@ public class InventoryManager : MonoBehaviour
             batteryCountText.text = "Pil: " + inventory[ItemType.Battery].ToString();
         }
     }
+
+    public void ToplananNotuEkle(string notMetni)
+    {
+       
+        if (!toplananNotlar.Contains(notMetni))
+        {
+            toplananNotlar.Add(notMetni);
+            Debug.Log("Yeni bir not envantere eklendi! Toplam Not: " + toplananNotlar.Count);
+        }
+    }
+
+    public void GuncelNotuGoster()
+    {
+        if (envanterNotYazisi != null)
+        {
+            if (toplananNotlar.Count > 0)
+            {
+                
+                envanterNotYazisi.text = toplananNotlar[guncelNotIndeksi];
+            }
+            else
+            {
+                envanterNotYazisi.text = "Henüz bir not bulunamadý...";
+            }
+        }
+    }
+
+   
+    public void SonrakiNot()
+    {
+        if (toplananNotlar.Count == 0) return; 
+
+        guncelNotIndeksi++;
+
+        
+        if (guncelNotIndeksi >= toplananNotlar.Count) guncelNotIndeksi = 0;
+
+        GuncelNotuGoster();
+    }
+
+   
+    public void OncekiNot()
+    {
+        if (toplananNotlar.Count == 0) return;
+
+        guncelNotIndeksi--; 
+
+        
+        if (guncelNotIndeksi < 0) guncelNotIndeksi = toplananNotlar.Count - 1;
+
+        GuncelNotuGoster();
+    }
+
 }

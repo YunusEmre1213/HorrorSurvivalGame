@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 3965103787965661676}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.25, y: -0.2, z: 0.335}
+  m_LocalPosition: {x: 0.25, y: -0.2, z: 0.54}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -345,7 +345,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 150
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -443,7 +443,7 @@ Transform:
   m_GameObject: {fileID: 7736238795672038979}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.003, z: 0.381}
+  m_LocalPosition: {x: 0, y: -0.03, z: 0.48}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -903,6 +903,8 @@ MonoBehaviour:
   inventoryPanel: {fileID: 0}
   batteryCountText: {fileID: 0}
   flashlight: {fileID: 4247496533818342488}
+  toplananNotlar: []
+  envanterNotYazisi: {fileID: 0}
 --- !u!114 &19401036895990166
 MonoBehaviour:
   m_ObjectHideFlags: 0
